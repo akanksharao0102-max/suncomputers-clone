@@ -1611,6 +1611,134 @@ const a=JSON.parse(document.getElementById("wp-emoji-settings").textContent),o=(
 /* ]]> */
 </script>
 
+<?php $logo_url = $wpsite_themeopts['header_logo']; ?>
+
+<div id="sc-box">
+    <div id="sc-hdr">
+        <div style="display:flex;align-items:center">
+            <div id="sc-logo"><img src="<?php echo $logo_url; ?>" alt="Sun"></div>
+            <div>
+                <div id="sc-name">Sun Computers</div>
+                <div id="sc-status"><span id="sc-dot"></span>AI Assistant &bull; Online</div>
+            </div>
+        </div>
+        <button id="sc-close" onclick="scToggle()">&#10005;</button>
+    </div>
+    <div id="sc-line"></div>
+    <div id="sc-msgs"></div>
+    <div id="sc-quick">
+        <button class="scqr" onclick="scQ('What IT services do you offer?')">&#128187; Services</button>
+        <button class="scqr" onclick="scQ('Tell me about data backup')">&#128190; Backup</button>
+        <button class="scqr" onclick="scQ('What products do you sell?')">&#128230; Products</button>
+        <button class="scqr" onclick="scQ('Where are you in Surat?')">&#128205; Location</button>
+    </div>
+    <div id="sc-inp-row">
+        <input id="sc-inp" type="text" placeholder="Type your question..." onkeydown="if(event.key==='Enter')scSend()">
+        <button id="sc-send" onclick="scSend()">
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+        </button>
+    </div>
+    <div id="sc-pw">Powered by AI &bull; Sun Computers Surat</div>
+</div>
+
+<button id="sc-fab" onclick="scToggle()">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    <span id="sc-fab-badge">1</span>
+</button>
+
+<script>
+(function(){
+    var LOGO = '<?php echo esc_js($logo_url); ?>';
+    var SYS = 'You are a helpful AI assistant for Sun Computers, Surat trusted IT partner for 300+ businesses. Services: IT AMC, Server Support, Active Directory, Private Cloud, Data Backup, Networking, Cybersecurity, Hardware Repair. Products: Laptops, Desktops, Servers, Printers, Accessories. Reply in 2-3 short friendly sentences. For pricing say it varies and invite them to call or visit. Email: contact@suncomputers.biz';
+    var msgs = [], open = false, inited = false;
+
+    function scInit(){
+        var a = document.getElementById('sc-msgs');
+        a.innerHTML = '';
+        var w = document.createElement('div');
+        w.id = 'sc-welcome';
+        w.innerHTML = '<div id="sc-wt">&#128075; Welcome to Sun Computers!</div><div id="sc-ws">Surat\'s trusted IT partner for 300+ businesses. Ask me anything!</div>';
+        a.appendChild(w);
+        var m = document.createElement('div');
+        m.className = 'scm b';
+        m.innerHTML = '<div class="scav"><img src="'+LOGO+'" alt="SC"></div><div class="scb">Hello! I\'m Sun\'s AI assistant. How can I help you today? &#128522;</div>';
+        a.appendChild(m);
+        inited = true;
+    }
+
+    window.scToggle = function(){
+        open = !open;
+        document.getElementById('sc-box').classList.toggle('open', open);
+        if(open){
+            document.getElementById('sc-fab-badge').style.display = 'none';
+            if(!inited) scInit();
+            setTimeout(function(){ document.getElementById('sc-inp').focus(); }, 300);
+        }
+    };
+
+    window.scQ = function(t){
+        document.getElementById('sc-quick').style.display = 'none';
+        document.getElementById('sc-inp').value = t;
+        scSend();
+    };
+
+    window.scSend = async function(){
+        var inp = document.getElementById('sc-inp');
+        var t = inp.value.trim();
+        if(!t) return;
+        inp.value = '';
+        document.getElementById('sc-send').disabled = true;
+        document.getElementById('sc-quick').style.display = 'none';
+        scAdd('u', t);
+
+        /* Build messages array for Groq */
+        var messages = [{role:'system', content: SYS}];
+        for(var i = 0; i < msgs.length; i++){
+            messages.push(msgs[i]);
+        }
+        messages.push({role:'user', content: t});
+
+        var typ = scTyp();
+        try {
+            var r = await fetch('http://192.168.20.169/wordpress/chat.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({messages: messages})
+            });
+            var d = await r.json();
+            var rep = d.reply ? d.reply : (d.error ? d.error : 'Please contact us at contact@suncomputers.biz');
+            msgs.push({role:'user', content: t});
+            msgs.push({role:'assistant', content: rep});
+            typ.remove();
+            scAdd('b', rep);
+        } catch(e) {
+            typ.remove();
+            scAdd('b', 'Sorry! Please email contact@suncomputers.biz or call us.');
+        }
+        document.getElementById('sc-send').disabled = false;
+    };
+
+    function scAdd(role, text){
+        var a = document.getElementById('sc-msgs');
+        var d = document.createElement('div');
+        d.className = 'scm ' + role;
+        var av = role === 'b' ? '<div class="scav"><img src="'+LOGO+'" alt="SC"></div>' : '';
+        var s = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        d.innerHTML = av + '<div class="scb">' + s + '</div>';
+        a.appendChild(d); a.scrollTop = a.scrollHeight; return d;
+    }
+
+    function scTyp(){
+        var a = document.getElementById('sc-msgs');
+        var d = document.createElement('div');
+        d.className = 'scm b';
+        d.innerHTML = '<div class="scav"><img src="'+LOGO+'" alt="SC"></div><div class="scb"><div class="sctyp"><span></span><span></span><span></span></div></div>';
+        a.appendChild(d); a.scrollTop = a.scrollHeight; return d;
+    }
+})();
+</script>
+<!-- END CHATBOX -->
+
 
 <script>
     $(document).ready(function() {
